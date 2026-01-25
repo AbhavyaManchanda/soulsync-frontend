@@ -1,7 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite' // Naya import
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwindcss(), // Is line ko add karein
+  ],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:5001' // Backend connection ke liye
+    }
+  }
 })
