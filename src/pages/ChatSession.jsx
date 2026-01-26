@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Send, User, Bot, ChevronLeft } from 'lucide-react';
+import { X,Send, User, Bot, ChevronLeft, Sun, Moon, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-// import { motion } from 'framer-motion';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const ChatSession = () => {
-     
+    // ✅ 1. Purely Functional States (Unchanged)
     const [messages, setMessages] = useState([
         { role: 'assistant', content: "Hello! I'm here to support you. How are you feeling today?" }
     ]);
@@ -17,7 +16,20 @@ const ChatSession = () => {
     const scrollRef = useRef(null);
     const navigate = useNavigate();
 
-    // 1. Fetch History Helper
+    // ✅ 2. Theme Toggle Logic
+    const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
+
+    useEffect(() => {
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
+    }, [isDark]);
+
+    // ✅ 3. Functionalities (Same as before)
     const fetchHistory = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -25,226 +37,214 @@ const ChatSession = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setHistory(res.data.data.sessions || []); 
-        } catch (err) { 
-            console.log("History error:", err); 
-        }
+        } catch (err) { console.log("History error:", err); }
     };
 
-    // 2. Initial Load
-    useEffect(() => {
-        fetchHistory();
-    }, []);
+    useEffect(() => { fetchHistory(); }, []);
+    useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-    // 3. Scroll Logic
-    useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-
-    // 4. FIXED Send Message Logic
+  
+  
+  
     const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+        e.preventDefault();
+        if (!input.trim() || loading) return;
 
-    const userText = input;
-    const userMsg = { role: 'user', content: userText };
-    
-    setMessages(prev => [...prev, userMsg]);
-    setInput('');
-    setLoading(true);
+        const userText = input;
+        const userMsg = { role: 'user', content: userText };
+        setMessages(prev => [...prev, userMsg]);
+        setInput('');
+        setLoading(true);
 
-    try {
-        const token = localStorage.getItem('token');
-        const res = await axios.post('/api/v1/sessions/chat', 
-            { 
-                message: userText, 
-                sessionId: currentSessionId // Yeh null hoga pehli baar
-            }, 
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post('/api/v1/sessions/chat', 
+                { message: userText, sessionId: currentSessionId }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
-        // console.log("DEBUG: Server Response Data:", res.data);
+            const aiReply = res.data?.aiResponse || res.data?.data?.aiResponse;
+            if (aiReply) {
+                const aiMsg = { role: 'assistant', content: aiReply };
+                setMessages(prev => [...prev, aiMsg]);
+            }
+            if (res.data.sessionId && res.data.sessionId !== currentSessionId) {
+                setCurrentSessionId(res.data.sessionId);
+                fetchHistory();
+            }
+        } catch (err) {
+            console.error("Chat Error", err);
+            if (err.response?.status === 429) {
+                setMessages(prev => [...prev, { role: 'assistant', content: "I'm processing a lot of thoughts. Give me a minute!" }]);
+            } else { alert("Oops! Error on my end."); }
+        } finally { setLoading(false); }
+    };
 
-        // FIX: Agar 'aiResponse' nahi mil raha toh 'message' check karein
-        const aiReply = res.data?.aiResponse || res.data?.data?.aiResponse;
-
-        if (aiReply) {
-            const aiMsg = { 
-                role: 'assistant', 
-                content: aiReply // Ensure 'content' key is used
-            };
-            setMessages(prev => [...prev, aiMsg]);
-        }
-
-        if (res.data.sessionId) {
-            setCurrentSessionId(res.data.sessionId);
-            fetchHistory(); 
-        }
-
-    } catch (err) {
-    console.error("Chat Error", err);
-    
-    // Agar Quota Exceed ho jaye
-    if (err.response?.status === 429 || err.message?.includes('429')) {
-        const quotaMsg = { 
-            role: 'assistant', 
-            content: "I'm processing a lot of thoughts right now. Please give me a minute (around 30-60 seconds) to recharge!" 
-        };
-        setMessages(prev => [...prev, quotaMsg]);
-    } else {
-        alert("Oops! Something went wrong on my end.");
-    }
-    } finally {
-        setLoading(false);
-    }
-};
-
-    // 5. Load Session
     const loadSpecificSession = async (sessionId) => {
         try {
             const token = localStorage.getItem('token');
             const res = await axios.get(`/api/v1/sessions/${sessionId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-
             const oldMessages = res.data.data.session.messages.map(msg => ({
                 role: msg.role === 'model' ? 'assistant' : 'user',
                 content: msg.text 
             }));
-            
             setCurrentSessionId(sessionId);
             setMessages(oldMessages);
-        } catch (err) {
-            console.error("Session load error", err);
-        }
+        } catch (err) { console.error("Session load error", err); }
     };
 
     const startNewChat = () => {
         setMessages([{ role: 'assistant', content: "I'm here for you. How can I help?" }]);
         setCurrentSessionId(null);
-    };
+  };
+  
+ const endCurrentSession = async () => {
+    // Check karein ki kya sessionId state mein available hai
+    if (!currentSessionId) {
+        console.log("No active Session ID found in state!");
+        return alert("Error: Session ID missing.");
+    }
 
- return (
-  <div className="flex h-screen bg-slate-50 overflow-hidden"> 
-    {/* 1. Sidebar: Hamesha screen ki poori height lega aur fixed rahega */}
-    <aside className="w-72 bg-white border-r hidden md:flex flex-col flex-shrink-0">
-      <div className="p-4 border-b">
-        <button 
-          onClick={startNewChat}
-          className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-md shadow-indigo-100"
-        >
-          + New Session
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          Chat History
-        </div>
+    try {
+        const token = localStorage.getItem('token');
+        // Console log lagayein debug ke liye
+        console.log("Ending session with ID:", currentSessionId);
         
-        {history && history.length > 0 ? (
-          history.map((session) => (
-            <button 
-              key={session._id} 
-              onClick={() => loadSpecificSession(session._id)}
-              className={`w-full p-4 text-left border-b transition-all group hover:bg-slate-50 ${
-                currentSessionId === session._id ? 'bg-indigo-50 border-r-4 border-r-indigo-600' : ''
-              }`}
-            >
-              <p className={`text-sm font-bold ${currentSessionId === session._id ? 'text-indigo-600' : 'text-slate-700'}`}>
-                {new Date(session.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-              </p>
-              <p className="text-xs text-slate-400 truncate italic">
-                {session.messages?.[0]?.text || "New conversation..."}
-              </p>
-            </button>
-          ))
-        ) : (
-          <p className="p-8 text-center text-xs text-slate-400 italic">No past sessions found.</p>
-        )}
-      </div>
-    </aside>
+        await axios.post(`/api/v1/sessions/end`, 
+            { sessionId: currentSessionId }, 
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-    {/* 2. Main Chat Area: Iska flex-col important hai */}
-    <div className="flex-1 flex flex-col min-w-0 h-full">
-      {/* Fixed Header */}
-      <header className="bg-white p-4 shadow-sm flex items-center gap-4 flex-shrink-0">
-        <button onClick={() => navigate('/dashboard')} className="p-2 hover:bg-slate-100 rounded-full transition">
-          <ChevronLeft size={24} />
-        </button>
-        <div>
-          <h2 className="font-bold text-lg text-slate-800">SoulSync AI Therapist</h2>
-          <p className="text-xs text-green-500 flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
-          </p>
-        </div>
-      </header>
-
-      {/* 3. SCROLLABLE MESSAGE AREA: Sirf ye hissa scroll hoga */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-slate-50/50">
-                <AnimatePresence>
-                     {messages.map((msg, i) => {
-                         // console.log(`Message ${i}:`, msg);
-                        //  console.log("Current Messages State:", messages)
-                    // Logic simple: User bubble right mein, AI/Model bubble left mein
-                    const isAI = msg.role === 'assistant' || msg.role === 'model';
-                    
-                    return (
-                    <motion.div 
-                        key={i}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex mb-4 ${!isAI ? 'justify-end' : 'justify-start'}`}
+        alert("Session ended and saved successfully!");
+        startNewChat();
+    } catch (err) {
+        console.error("Backend Error Response:", err.response?.data);
+        alert(err.response?.data?.message || "Could not end session.");
+    }
+  };
+  
+    return (
+        <div className={`flex h-screen transition-colors duration-500 overflow-hidden font-sans ${isDark ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
+            
+            {/* 1. Sidebar */}
+            <aside className={`w-72 hidden md:flex flex-col flex-shrink-0 border-r transition-all ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl shadow-black/50' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <div className="p-6 border-b border-inherit">
+                    <button 
+                        onClick={startNewChat}
+                        className="w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-black text-sm hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20 active:scale-95"
                     >
-                        <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm flex gap-3 ${
-                        !isAI 
-                            ? 'bg-indigo-600 text-white rounded-tr-none' 
-                            : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
-                        }`}>
-                        {/* Bot Icon left side ke liye */}
-                        {isAI && <Bot size={20} className="text-indigo-600 mt-1 flex-shrink-0" />}
-                        
-                        <p className="leading-relaxed whitespace-pre-wrap text-sm md:text-base">
-                            {/* Dono keys handle ki hain taaki response miss na ho */}
-                            {msg.content || msg.text}
-                        </p>
-                        
-                        {/* User Icon right side ke liye */}
-                        {!isAI && <User size={20} className="text-indigo-200 mt-1 flex-shrink-0" />}
-                        </div>
-                    </motion.div>
-                    );
-                })}
-                </AnimatePresence>
-                        
-        {loading && (
-          <div className="flex gap-2 p-4">
-            <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
-            <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-            <span className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-          </div>
-        )}
-        <div ref={scrollRef} />
-      </div>
+                        <Plus size={18} /> New Session
+                    </button>
+                </div>
 
-      {/* 4. FIXED INPUT AREA: Hamesha screen ke bottom par rahega */}
-      <footer className="p-4 bg-white border-t flex-shrink-0">
-        <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex gap-3">
-          <input 
-            type="text" 
-            className="flex-1 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-            placeholder="Share what's on your mind..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button type="submit" disabled={loading} className="bg-indigo-600 text-white p-4 rounded-2xl hover:bg-indigo-700 transition disabled:opacity-50">
-            <Send size={24} />
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
+                    <div className={`p-6 text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        Chat History
+                    </div>
+                    {history.map((session) => (
+                        <button 
+                            key={session._id} 
+                            onClick={() => loadSpecificSession(session._id)}
+                            className={`w-full p-5 text-left transition-all border-b border-inherit ${
+                                currentSessionId === session._id 
+                                ? (isDark ? 'bg-indigo-500/10 border-r-4 border-r-indigo-500' : 'bg-indigo-50 border-r-4 border-r-indigo-600') 
+                                : 'hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
+                            }`}
+                        >
+                            <p className={`text-xs font-black mb-1 ${currentSessionId === session._id ? 'text-indigo-400' : (isDark ? 'text-slate-400' : 'text-slate-700')}`}>
+                                {new Date(session.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                            </p>
+                            <p className={`text-xs truncate italic ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                                {session.messages?.[0]?.text || "New conversation..."}
+                            </p>
+                        </button>
+                    ))}
+                </div>
+            </aside>
+
+            {/* 2. Main Chat Area */}
+            <div className="flex-1 flex flex-col min-w-0 h-full relative">
+                
+                {/* Header */}
+                <header className={`p-4 shadow-sm flex items-center justify-between transition-all border-b ${isDark ? 'bg-slate-900/80 border-slate-800 backdrop-blur-md' : 'bg-white border-slate-100'}`}>
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/dashboard')} className={`p-2 rounded-full transition-all ${isDark ? 'text-slate-400 hover:bg-slate-800' : 'hover:bg-slate-100'}`}>
+                            <ChevronLeft size={24} />
+                        </button>
+                        <div>
+                            <h2 className={`font-black text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>Therapy Agent</h2>
+                            <p className="text-[10px] text-green-500 flex items-center gap-1.5 font-bold uppercase tracking-widest">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
+                            </p>
+                        </div>
+                    </div>
+                    {/* ✅ Theme Toggle inside Header */}
+                    <button onClick={() => setIsDark(!isDark)} className={`p-2.5 rounded-xl border transition-all ${isDark ? 'bg-slate-800 text-yellow-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
+                        {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
+                </header>
+
+                {/* 3. Message Area */}
+                <div className={`flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar ${isDark ? 'bg-[#0f172a]' : 'bg-slate-50/50'}`}>
+                    <AnimatePresence>
+                        {messages.map((msg, i) => {
+                            const isAI = msg.role === 'assistant' || msg.role === 'model';
+                            return (
+                                <motion.div 
+                                    key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                                    className={`flex ${!isAI ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`max-w-[85%] p-5 rounded-3xl shadow-sm flex gap-4 transition-all ${
+                                        !isAI 
+                                            ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-900/20' 
+                                            : (isDark ? 'bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700' : 'bg-white text-slate-700 rounded-tl-none border border-slate-100 shadow-sm')
+                                    }`}>
+                                        {isAI && <Bot size={22} className={`mt-1 flex-shrink-0 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />}
+                                        <p className="leading-relaxed whitespace-pre-wrap text-sm md:text-base font-medium">
+                                            {msg.content || msg.text}
+                                        </p>
+                                        {!isAI && <User size={22} className="text-indigo-200 mt-1 flex-shrink-0" />}
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
+                    {loading && (
+                        <div className="flex gap-2.5 p-4 animate-pulse">
+                            <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce"></span>
+                            <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                            <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                        </div>
+                    )}
+                    <div ref={scrollRef} />
+                </div>
+
+                {/* 4. Footer Input */}
+                <footer className={`p-6 transition-all border-t ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex gap-4">
+                        <input 
+                            type="text" value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            className={`flex-1 p-4.5 rounded-[1.5rem] outline-none transition-all border-2 text-sm md:text-base ${
+                                isDark 
+                                ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' 
+                                : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-indigo-500 focus:bg-white'
+                            }`}
+                            placeholder="Share what's on your mind..."
+                        />
+                        <button type="submit" disabled={loading} className={`p-4.5 rounded-[1.5rem] transition-all flex items-center justify-center ${loading ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20 active:scale-95'}`}>
+                            <Send size={24} />
+                        </button>
+                    </form>
+          </footer>
+          <button onClick={endCurrentSession} className={`absolute bottom-6 right-6 p-3 rounded-full transition-all ${isDark ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>
+            <X size={22} />
           </button>
-        </form>
-      </footer>
-    </div>
-  </div>
-);
+            </div>
+        </div>
+    );
 };
 
 export default ChatSession;

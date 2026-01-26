@@ -5,6 +5,7 @@ import Auth from './pages/Auth';
 import ProtectedRoute from './components/ProtectedRoutes';
 import Dashboard from './pages/Dashboard';
 import ChatSession from './pages/ChatSession';
+import Journal from './pages/Journal';
 
 function App() {
   return (
@@ -28,6 +29,14 @@ function App() {
                 <ChatSession />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/journal"
+            element={
+              <ProtectedRoute>
+                <Journal />
+              </ProtectedRoute>
+            }
           />
         </Routes>
       </div>
