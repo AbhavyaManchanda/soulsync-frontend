@@ -58,7 +58,7 @@ const ChatSession = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('/api/v1/sessions/chat', 
+            const res = await axios.post('http://localhost:5001/api/v1/sessions/chat', 
                 { message: userText, sessionId: currentSessionId }, 
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -79,6 +79,9 @@ const ChatSession = () => {
             } else { alert("Oops! Error on my end."); }
         } finally { setLoading(false); }
     };
+
+
+
 
     const loadSpecificSession = async (sessionId) => {
         try {
@@ -129,6 +132,7 @@ const ChatSession = () => {
         <div className={`flex h-screen transition-colors duration-500 overflow-hidden font-sans ${isDark ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
             
             {/* 1. Sidebar */}
+                
             <aside className={`w-72 hidden md:flex flex-col flex-shrink-0 border-r transition-all ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl shadow-black/50' : 'bg-white border-slate-200 shadow-sm'}`}>
                 <div className="p-6 border-b border-inherit">
                     <button 
@@ -153,12 +157,19 @@ const ChatSession = () => {
                                 : 'hover:bg-slate-100/50 dark:hover:bg-slate-800/50'
                             }`}
                         >
-                            <p className={`text-xs font-black mb-1 ${currentSessionId === session._id ? 'text-indigo-400' : (isDark ? 'text-slate-400' : 'text-slate-700')}`}>
-                                {new Date(session.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                            {/* 1. Yahan Date ki jagah Title aayega */}
+                            <p className={`text-[13px] font-bold mb-1 capitalize ${currentSessionId === session._id ? 'text-indigo-400' : (isDark ? 'text-slate-200' : 'text-slate-800')}`}>
+                                {session.title || "New Reflection"} 
                             </p>
-                            <p className={`text-xs truncate italic ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
-                                {session.messages?.[0]?.text || "New conversation..."}
-                            </p>
+
+                            {/* 2. Date ko neeche sub-text bana do */}
+                            <div className="flex items-center gap-2">
+                                <p className={`text-[10px] font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    {new Date(session.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                </p>
+                                {/* Optional: Agar summary exist karti hai toh chota indicator */}
+                                {!session.isActive && <span className="text-[10px] text-green-500">● Done</span>}
+                            </div>
                         </button>
                     ))}
                 </div>

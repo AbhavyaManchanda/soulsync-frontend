@@ -31,7 +31,7 @@ function App() {
             } 
           />
           <Route
-            path="/journal"
+            path="/journals"
             element={
               <ProtectedRoute>
                 <Journal />

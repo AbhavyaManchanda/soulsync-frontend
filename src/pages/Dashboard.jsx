@@ -51,7 +51,10 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchMoodData = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/v1/journal/stats');
+        const token = localStorage.getItem('token');
+        const res = await axios.get('http://localhost:5001/api/v1/journals/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setSentimentData(res.data.data);
       } catch (err) { console.error(err); }
     };
@@ -209,7 +212,7 @@ const Dashboard = () => {
         <div className="grid md:grid-cols-2 gap-8">
           {[
             { icon: MessageSquare, title: "AI Therapy", desc: "Empathetic conversation with Gemini.", path: "/chat" },
-            { icon: PenTool, title: "Journaling", desc: "AI-powered long-form reflection.", path: "/journal" }
+            { icon: PenTool, title: "Journaling", desc: "AI-powered long-form reflection.", path: "/journals" }
           ].map((item, idx) => (
             <div key={idx} onClick={() => navigate(item.path)} className={`p-8 rounded-[2.5rem] border transition-all cursor-pointer group flex flex-col items-start ${isDark ? 'bg-slate-900/40 border-slate-800 hover:border-indigo-500/50' : 'bg-white border-slate-100 shadow-sm hover:shadow-xl'}`}>
               <item.icon className={`mb-4 transition-transform group-hover:scale-110 ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} size={32} />
