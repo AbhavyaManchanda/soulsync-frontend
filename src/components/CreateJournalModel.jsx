@@ -14,7 +14,7 @@ const CreateJournalModal = ({ isOpen, onClose, onRefresh }) => {
     try {
       const token = localStorage.getItem('token');
       // Backend controller 'createJournal' ko hit karenge
-      await axios.post('http://localhost:5001/api/v1/journals', 
+      await axios.post('/api/v1/journals', 
         { content }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );

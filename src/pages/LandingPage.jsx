@@ -83,7 +83,7 @@ const LandingPage = () => {
         <section className="max-w-4xl mx-auto px-6 pt-24 pb-20 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black mb-8 border uppercase tracking-[0.2em] ${isDark ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' : 'bg-indigo-50 text-indigo-700 border-indigo-100'}`}>
-              <Sparkles size={12} /> Powered by Gemini 1.5
+              <Sparkles size={12} /> Powered by OpenAI Llama
             </div>
             <h1 className={`text-6xl md:text-8xl font-black mb-8 tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
               Mindfulness, <br />

@@ -9,7 +9,7 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': 'http://localhost:5001' // Backend connection ke liye
+      '/api': 'https://soulsync-backend-e70c.onrender.com' // Backend connection ke liye
     }
   }
 })

@@ -7,6 +7,8 @@ import BreathingModal from '../components/BreathingModal';
 import ZenGardenModal from '../components/ZenGardenModal';
 import YogaModal from '../components/YogaModal';
 import DietModal from '../components/DietModal';
+import vite_api_url from '../../vite.config.js';
+import api from '../axios.config.js';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -41,7 +43,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/v1/blogs'); 
+        const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/blogs'); 
         setArticles(res.data.data);
       } catch (err) { console.error("Blogs fetch failed", err); }
     };
@@ -52,7 +54,7 @@ const Dashboard = () => {
     const fetchMoodData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5001/api/v1/journals/stats', {
+        const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/journals/stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSentimentData(res.data.data);
@@ -65,7 +67,7 @@ const Dashboard = () => {
     const fetchStats = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('/api/v1/stats', {
+        const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.data.data.moods && res.data.data.moods.length > 0) {
@@ -86,7 +88,7 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('/api/v1/moods', { content: mood }, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/moods', { content: mood }, { headers: { Authorization: `Bearer ${token}` } });
       setLastResponse(res.data.data.log.aiResponse);
       setSuggestSession(res.data.data.suggestSession);
       const newPoint = {
@@ -121,7 +123,7 @@ const Dashboard = () => {
     setLoadingYoga(true);
     try {
       const currentMoodScore = sentimentData?.length > 0 ? sentimentData[sentimentData.length - 1].score : 0;
-      const res = await axios.post('http://localhost:5001/api/v1/yoga/suggest', { moodScore: currentMoodScore });
+      const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/yoga/suggest', { moodScore: currentMoodScore });
       setYogaData(res.data);
       setActiveActivity('Yoga');
     } catch (err) { alert("Gemini busy hai!"); } finally { setLoadingYoga(false); }
@@ -130,7 +132,7 @@ const Dashboard = () => {
   const handleDietClick = async () => {
     try {
       const currentMoodScore = sentimentData?.length > 0 ? sentimentData[sentimentData.length - 1].score : 0;
-      const res = await axios.post('http://localhost:5001/api/v1/diet/suggest', { moodScore: currentMoodScore });
+      const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/diet/suggest', { moodScore: currentMoodScore });
       setDietData(res.data);
       setActiveActivity('Diet');
     } catch (err) { alert("Gemini busy hai!"); }

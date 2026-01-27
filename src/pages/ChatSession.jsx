@@ -33,7 +33,7 @@ const ChatSession = () => {
     const fetchHistory = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('/api/v1/sessions/my-sessions', {
+            const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/sessions/my-sessions', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setHistory(res.data.data.sessions || []); 
@@ -58,7 +58,7 @@ const ChatSession = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:5001/api/v1/sessions/chat', 
+            const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/sessions/chat', 
                 { message: userText, sessionId: currentSessionId }, 
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -86,7 +86,7 @@ const ChatSession = () => {
     const loadSpecificSession = async (sessionId) => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`/api/v1/sessions/${sessionId}`, {
+            const res = await axios.get(`https://soulsync-backend-e70c.onrender.com/api/v1/sessions/${sessionId}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const oldMessages = res.data.data.session.messages.map(msg => ({
@@ -115,7 +115,7 @@ const ChatSession = () => {
         // Console log lagayein debug ke liye
         console.log("Ending session with ID:", currentSessionId);
         
-        await axios.post(`/api/v1/sessions/end`, 
+        await axios.post(`https://soulsync-backend-e70c.onrender.com/api/v1/sessions/end`, 
             { sessionId: currentSessionId }, 
             { headers: { Authorization: `Bearer ${token}` } }
         );

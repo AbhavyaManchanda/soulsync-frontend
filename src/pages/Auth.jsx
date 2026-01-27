@@ -43,7 +43,7 @@ const Auth = () => {
     e.preventDefault();
     if (!isLogin && password !== confirmPassword) return alert("Passwords do not match!");
 
-    const endpoint = isLogin ? '/api/v1/users/login' : '/api/v1/users/signup';
+    const endpoint = isLogin ? 'https://soulsync-backend-e70c.onrender.com/api/v1/users/login' : 'https://soulsync-backend-e70c.onrender.com/api/v1/users/signup';
     const payload = isLogin 
       ? { email, password } 
       : { name, email, password, passwordConfirm: confirmPassword }; 
