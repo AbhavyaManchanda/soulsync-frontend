@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { X,Send, User, Bot, ChevronLeft, Sun, Moon, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../axios.config.js';
 
 const ChatSession = () => {
     // ✅ 1. Purely Functional States (Unchanged)
@@ -32,10 +32,7 @@ const ChatSession = () => {
     // ✅ 3. Functionalities (Same as before)
     const fetchHistory = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/sessions/my-sessions', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/api/v1/sessions/my-sessions');
             setHistory(res.data.data.sessions || []); 
         } catch (err) { console.log("History error:", err); }
     };
@@ -57,11 +54,7 @@ const ChatSession = () => {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/sessions/chat', 
-                { message: userText, sessionId: currentSessionId }, 
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const res = await api.post('/api/v1/sessions/chat', { message: userText, sessionId: currentSessionId });
 
             const aiReply = res.data?.aiResponse || res.data?.data?.aiResponse;
             if (aiReply) {
@@ -85,10 +78,7 @@ const ChatSession = () => {
 
     const loadSpecificSession = async (sessionId) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`https://soulsync-backend-e70c.onrender.com/api/v1/sessions/${sessionId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/api/v1/sessions/${sessionId}`);
             const oldMessages = res.data.data.session.messages.map(msg => ({
                 role: msg.role === 'model' ? 'assistant' : 'user',
                 content: msg.text 
@@ -111,14 +101,10 @@ const ChatSession = () => {
     }
 
     try {
-        const token = localStorage.getItem('token');
         // Console log lagayein debug ke liye
         console.log("Ending session with ID:", currentSessionId);
         
-        await axios.post(`https://soulsync-backend-e70c.onrender.com/api/v1/sessions/end`, 
-            { sessionId: currentSessionId }, 
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.post('/api/v1/sessions/end', { sessionId: currentSessionId });
 
         alert("Session ended and saved successfully!");
         startNewChat();

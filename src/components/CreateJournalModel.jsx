@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { X, Save, Loader2 } from 'lucide-react';
+import api from '../axios.config.js';
 
 const CreateJournalModal = ({ isOpen, onClose, onRefresh }) => {
   const [content, setContent] = useState('');
@@ -12,12 +12,8 @@ const CreateJournalModal = ({ isOpen, onClose, onRefresh }) => {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       // Backend controller 'createJournal' ko hit karenge
-      await axios.post('/api/v1/journals', 
-        { content }, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.post('/api/v1/journals', { content });
       
       setContent('');
       onRefresh(); // List refresh karne ke liye

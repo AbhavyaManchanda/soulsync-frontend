@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
 import { MessageSquare, PenTool, Heart, Sun, Moon, LogOut } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +6,6 @@ import BreathingModal from '../components/BreathingModal';
 import ZenGardenModal from '../components/ZenGardenModal';
 import YogaModal from '../components/YogaModal';
 import DietModal from '../components/DietModal';
-import vite_api_url from '../../vite.config.js';
 import api from '../axios.config.js';
 
 const Dashboard = () => {
@@ -43,7 +41,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/blogs'); 
+        const res = await api.get('/api/v1/blogs'); 
         setArticles(res.data.data);
       } catch (err) { console.error("Blogs fetch failed", err); }
     };
@@ -53,10 +51,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchMoodData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/journals/stats', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get('/api/v1/journals/stats');
         setSentimentData(res.data.data);
       } catch (err) { console.error(err); }
     };
@@ -66,10 +61,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/stats', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get('/api/v1/stats');
         if (res.data.data.moods && res.data.data.moods.length > 0) {
           const formattedData = res.data.data.moods.slice(0, 7).reverse().map(item => ({
             day: new Date(item.createdAt).toLocaleDateString('en-US', { weekday: 'short' }),
@@ -82,23 +74,41 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
-  const handleMoodSubmit = async (e) => {
-    e.preventDefault();
-    if (!mood) return alert("Please write something first!");
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/moods', { content: mood }, { headers: { Authorization: `Bearer ${token}` } });
-      setLastResponse(res.data.data.log.aiResponse);
-      setSuggestSession(res.data.data.suggestSession);
-      const newPoint = {
-        day: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
-        score: res.data.data.log.sentimentScore 
-      };
-      setGraphData(prev => [...prev.slice(-6), newPoint]);
-      setMood(''); 
-    } catch (err) { alert("Check-in failed."); } finally { setLoading(false); }
-  };
+ const handleMoodSubmit = async (e) => {
+  e.preventDefault();
+  if (!mood.trim()) return alert("Please write something first!");
+  
+  setLoading(true);
+  try {
+    const res = await api.post('/api/v1/moods', { content: mood });
+    
+    // Safety check for response data
+    const logData = res.data?.data?.log;
+    if (!logData) throw new Error("Invalid response format");
+
+    setLastResponse(logData.aiResponse);
+    setSuggestSession(res.data.data.suggestSession);
+
+    // Chart Point logic
+    const newPoint = {
+      day: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
+      score: logData.sentimentScore 
+    };
+
+    // Naya point add karke array limit mein rakho
+    setGraphData(prev => {
+      const updated = [...prev, newPoint];
+      return updated.length > 7 ? updated.slice(1) : updated;
+    });
+
+    setMood(''); 
+  } catch (err) {
+    console.error("Mood Submission Error:", err);
+    alert(err.response?.data?.message || "Check-in failed. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -123,7 +133,7 @@ const Dashboard = () => {
     setLoadingYoga(true);
     try {
       const currentMoodScore = sentimentData?.length > 0 ? sentimentData[sentimentData.length - 1].score : 0;
-      const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/yoga/suggest', { moodScore: currentMoodScore });
+      const res = await api.post('/api/v1/yoga/suggest', { moodScore: currentMoodScore });
       setYogaData(res.data);
       setActiveActivity('Yoga');
     } catch (err) { alert("Gemini busy hai!"); } finally { setLoadingYoga(false); }
@@ -132,7 +142,7 @@ const Dashboard = () => {
   const handleDietClick = async () => {
     try {
       const currentMoodScore = sentimentData?.length > 0 ? sentimentData[sentimentData.length - 1].score : 0;
-      const res = await axios.post('https://soulsync-backend-e70c.onrender.com/api/v1/diet/suggest', { moodScore: currentMoodScore });
+      const res = await api.post('/api/v1/diet/suggest', { moodScore: currentMoodScore });
       setDietData(res.data);
       setActiveActivity('Diet');
     } catch (err) { alert("Gemini busy hai!"); }

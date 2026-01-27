@@ -1,6 +1,6 @@
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},
+    tailwindcss: {}, // 👈 Yahan se '@' aur '/postcss' hata do
     autoprefixer: {},
   },
 }

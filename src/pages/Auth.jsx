@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../axios.config.js';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 import { Heart, Mail, Lock, User, ArrowRight, Sun, Moon } from 'lucide-react';
@@ -43,13 +43,13 @@ const Auth = () => {
     e.preventDefault();
     if (!isLogin && password !== confirmPassword) return alert("Passwords do not match!");
 
-    const endpoint = isLogin ? 'https://soulsync-backend-e70c.onrender.com/api/v1/users/login' : 'https://soulsync-backend-e70c.onrender.com/api/v1/users/signup';
+    const endpoint = isLogin ? '/api/v1/users/login' : '/api/v1/users/signup';
     const payload = isLogin 
       ? { email, password } 
       : { name, email, password, passwordConfirm: confirmPassword }; 
 
     try {
-      const res = await axios.post(endpoint, payload);
+      const res = await api.post(endpoint, payload);
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {

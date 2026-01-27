@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Plus, Book, Calendar, X, Trash2, Sun, Moon, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CreateJournalModal from '../components/CreateJournalModel';
-import vite_api_url from '../../vite.config.js';
 import api from '../axios.config.js';
 
 const Journal = () => {
@@ -29,10 +27,7 @@ const Journal = () => {
 
   const fetchJournals = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('https://soulsync-backend-e70c.onrender.com/api/v1/journals', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/api/v1/journals');
       setJournals(res.data.data.journals);
     } catch (err) {
       console.error("Journal fetch error", err);
@@ -46,10 +41,7 @@ const Journal = () => {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure?")) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`https://soulsync-backend-e70c.onrender.com/api/v1/journals/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/api/v1/journals/${id}`);
       setSelectedJournal(null);
       fetchJournals();
     } catch (err) { alert("Delete failed"); }
