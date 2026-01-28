@@ -20,7 +20,7 @@ const Dashboard = () => {
   const [activeActivity, setActiveActivity] = useState(null);
   const [yogaData, setYogaData] = useState(null);
   const [loadingYoga, setLoadingYoga] = useState(false);
-  const [sentimentData, setSentimentData] = useState([]);
+  const [latestMoodScore, setLatestMoodScore] = useState(0);
   const [dietData, setDietData] = useState(null);
   const [articles, setArticles] = useState([]);
   
@@ -49,27 +49,21 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    const fetchMoodData = async () => {
-      try {
-        const res = await api.get('/api/v1/journals/stats');
-        setSentimentData(res.data.data);
-      } catch (err) { console.error(err); }
-    };
-    fetchMoodData();
-  }, []);
-
-  useEffect(() => {
     const fetchStats = async () => {
       try {
         const res = await api.get('/api/v1/stats');
-        if (res.data.data.moods && res.data.data.moods.length > 0) {
-          const formattedData = res.data.data.moods.slice(0, 7).reverse().map(item => ({
+        const { moods } = res.data.data || {};
+        if (moods && moods.length > 0) {
+          const formattedData = moods.slice(0, 7).reverse().map((item) => ({
             day: new Date(item.createdAt).toLocaleDateString('en-US', { weekday: 'short' }),
-            score: item.sentimentScore 
+            score: item.sentimentScore ?? 0
           }));
           setGraphData(formattedData);
+          setLatestMoodScore(moods[0]?.sentimentScore ?? 0);
         }
-      } catch (err) { console.log("Error fetching stats:", err.response?.status); }
+      } catch (err) {
+        console.error('Error fetching stats:', err.response?.status, err);
+      }
     };
     fetchStats();
   }, []);
@@ -87,19 +81,18 @@ const Dashboard = () => {
     if (!logData) throw new Error("Invalid response format");
 
     setLastResponse(logData.aiResponse);
-    setSuggestSession(res.data.data.suggestSession);
+    setSuggestSession(!!res.data?.data?.suggestSession);
 
-    // Chart Point logic
+    // Chart point + latest score for yoga/diet
     const newPoint = {
       day: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
-      score: logData.sentimentScore 
+      score: logData.sentimentScore ?? 0
     };
-
-    // Naya point add karke array limit mein rakho
-    setGraphData(prev => {
+    setGraphData((prev) => {
       const updated = [...prev, newPoint];
       return updated.length > 7 ? updated.slice(1) : updated;
     });
+    setLatestMoodScore(logData.sentimentScore ?? 0);
 
     setMood(''); 
   } catch (err) {
@@ -132,20 +125,24 @@ const Dashboard = () => {
   const handleYogaClick = async () => {
     setLoadingYoga(true);
     try {
-      const currentMoodScore = sentimentData?.length > 0 ? sentimentData[sentimentData.length - 1].score : 0;
-      const res = await api.post('/api/v1/yoga/suggest', { moodScore: currentMoodScore });
+      const res = await api.post('/api/v1/yoga/suggest', { moodScore: latestMoodScore });
       setYogaData(res.data);
       setActiveActivity('Yoga');
-    } catch (err) { alert("Gemini busy hai!"); } finally { setLoadingYoga(false); }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Yoga suggestion failed. Please try again.');
+    } finally {
+      setLoadingYoga(false);
+    }
   };
 
   const handleDietClick = async () => {
     try {
-      const currentMoodScore = sentimentData?.length > 0 ? sentimentData[sentimentData.length - 1].score : 0;
-      const res = await api.post('/api/v1/diet/suggest', { moodScore: currentMoodScore });
+      const res = await api.post('/api/v1/diet/suggest', { moodScore: latestMoodScore });
       setDietData(res.data);
       setActiveActivity('Diet');
-    } catch (err) { alert("Gemini busy hai!"); }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Diet suggestion failed. Please try again.');
+    }
   };
 
   return (

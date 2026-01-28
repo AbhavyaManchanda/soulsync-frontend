@@ -53,7 +53,11 @@ const Auth = () => {
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');
     } catch (err) {
-      alert(err.response?.data?.message || "Authentication Failed");
+      const msg = err.response?.data?.message || err.message || 'Authentication failed';
+      const hint = err.response?.status === 401
+        ? '\n\nUsing a new or empty database? Create an account first.'
+        : '';
+      alert(msg + hint);
     }
   };
 
