@@ -190,7 +190,7 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         
         {/* Navbar with Toggle */}
-        <nav className={`flex justify-between items-center p-4 rounded-3xl border transition-all ${isDark ? 'bg-slate-900/50 border-slate-800 backdrop-blur-md' : 'bg-white border-slate-100 shadow-sm'}`}>
+        {/* <nav className={`flex justify-between items-center p-4 rounded-3xl border transition-all ${isDark ? 'bg-slate-900/50 border-slate-800 backdrop-blur-md' : 'bg-white border-slate-100 shadow-sm'}`}>
           <div className={`text-2xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-indigo-600'}`}>
             <Heart fill={isDark ? "#6366f1" : "currentColor"} size={24} /> SoulSync
           </div>
@@ -202,7 +202,33 @@ const Dashboard = () => {
               <LogOut size={18} /> Logout
             </button>
           </div>
-        </nav>
+        </nav> */}
+
+        {/* Navbar with Toggle */}
+<nav className={`flex flex-wrap md:flex-nowrap justify-between items-center gap-4 p-4 rounded-3xl border transition-all ${isDark ? 'bg-slate-900/50 border-slate-800 backdrop-blur-md' : 'bg-white border-slate-100 shadow-sm'}`}>
+  
+  {/* Logo Section - No Shrink */}
+  <div className={`text-2xl font-bold flex items-center gap-2 flex-shrink-0 ${isDark ? 'text-white' : 'text-indigo-600'}`}>
+    <Heart fill={isDark ? "#6366f1" : "currentColor"} size={24} /> SoulSync
+  </div>
+
+  {/* Actions Section */}
+  <div className="flex items-center gap-2 md:gap-3">
+    <button 
+      onClick={() => setIsDark(!isDark)} 
+      className={`p-2 rounded-xl transition-all flex-shrink-0 ${isDark ? 'bg-slate-800 text-yellow-400 border border-slate-700' : 'bg-slate-100 text-slate-500 border border-slate-200'}`}
+    >
+      {isDark ? <Sun size={20} /> : <Moon size={20} />}
+    </button>
+    
+    <button 
+      onClick={handleLogout} 
+      className={`flex items-center gap-2 font-bold px-3 md:px-4 py-2 rounded-xl border transition-all whitespace-nowrap ${isDark ? 'text-slate-400 border-slate-800 hover:text-red-400 hover:bg-red-500/10' : 'text-slate-500 border-slate-200 hover:bg-red-50 hover:text-red-500'}`}
+    >
+      <LogOut size={18} /> <span className="text-sm md:text-base">Logout</span>
+    </button>
+  </div>
+</nav>
 
         <header className="py-2">
           <h1 className={`text-4xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>How are you today?</h1>
