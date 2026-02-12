@@ -179,7 +179,7 @@ const ZenGardenModal = ({ isOpen, onClose }) => {
   const [selectedEmoji, setSelectedEmoji] = useState('✨'); 
   const [drawMode, setDrawMode] = useState('emoji'); 
 
-  const emojiList = ['✨', '🌸', '🍃', '🌊', '⭐', '🎈'];
+  const emojiList = ['✨', '🌸', '🍃', '🌊', '🎈'];
   const colors = [
     { name: 'Classic Sand', code: '#e5d528' },
     { name: 'Deep Sea', code: '#2a9d8f' },

@@ -48,59 +48,99 @@ const Dashboard = () => {
     fetchArticles();
   }, []);
 
+
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get('/api/v1/stats');
-        const { moods } = res.data.data || {};
-        if (moods && moods.length > 0) {
-          const formattedData = moods.slice(0, 7).reverse().map((item) => ({
-            day: new Date(item.createdAt).toLocaleDateString('en-US', { weekday: 'short' }),
-            score: item.sentimentScore ?? 0
-          }));
-          setGraphData(formattedData);
-          setLatestMoodScore(moods[0]?.sentimentScore ?? 0);
-        }
-      } catch (err) {
-        console.error('Error fetching stats:', err.response?.status, err);
-      }
-    };
-    fetchStats();
+    const fetchStats = async () => {
+       try {
+        const res = await api.get('/api/v1/stats');
+        const { moods } = res.data.data || {};
+        
+        if (moods && moods.length > 0) {
+          // Group by unique date (YYYY-MM-DD) to avoid mixing weeks
+          const groups = moods.reduce((acc, item) => {
+            const dateKey = new Date(item.createdAt).toISOString().split('T')[0];
+            if (!acc[dateKey]) acc[dateKey] = { sum: 0, count: 0, day: '' };
+            acc[dateKey].sum += item.sentimentScore ?? 0;
+            acc[dateKey].count += 1;
+            acc[dateKey].day = new Date(item.createdAt).toLocaleDateString('en-US', { weekday: 'short' });
+            return acc;
+          }, {});
+
+          // Convert back to array, sort by date, and take last 7 days
+          const formattedData = Object.keys(groups)
+            .sort()
+            .map(date => ({
+              day: groups[date].day,
+              fullDate: date, // Used for unique tooltip context
+              score: Number((groups[date].sum / groups[date].count).toFixed(2))
+            }))
+            .slice(-7);
+
+          setGraphData(formattedData);
+          setLatestMoodScore(moods[0]?.sentimentScore ?? 0);
+        }
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+      }
+    };
+    fetchStats();
   }, []);
+  
+
+
 
  const handleMoodSubmit = async (e) => {
-  e.preventDefault();
-  if (!mood.trim()) return alert("Please write something first!");
+    e.preventDefault();
+      if (!mood.trim()) return alert("Please write something first!");
   
-  setLoading(true);
-  try {
-    const res = await api.post('/api/v1/moods', { content: mood });
-    
-    // Safety check for response data
-    const logData = res.data?.data?.log;
-    if (!logData) throw new Error("Invalid response format");
+      setLoading(true);
+      try {
+        const res = await api.post('/api/v1/moods', { content: mood });
+        
+        // Safety check for response data
+        const logData = res.data?.data?.log;
+        if (!logData) throw new Error("Invalid response format");
 
-    setLastResponse(logData.aiResponse);
-    setSuggestSession(!!res.data?.data?.suggestSession);
+        setLastResponse(logData.aiResponse);
+        setSuggestSession(!!res.data?.data?.suggestSession);
 
-    // Chart point + latest score for yoga/diet
-    const newPoint = {
-      day: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
-      score: logData.sentimentScore ?? 0
-    };
-    setGraphData((prev) => {
-      const updated = [...prev, newPoint];
-      return updated.length > 7 ? updated.slice(1) : updated;
-    });
-    setLatestMoodScore(logData.sentimentScore ?? 0);
+        // Chart point + latest score for yoga/diet
+        const todayKey = new Date().toISOString().split('T')[0];
+        const todayName = new Date().toLocaleDateString('en-US', { weekday: 'short' });
 
-    setMood(''); 
-  } catch (err) {
-    console.error("Mood Submission Error:", err);
-    alert(err.response?.data?.message || "Check-in failed. Please try again.");
-  } finally {
-    setLoading(false);
-  }
+        setGraphData((prev) => {
+            const existingDayIdx = prev.findIndex(item => item.fullDate === todayKey);
+            
+            if (existingDayIdx !== -1) {
+              // If today exists, we update the average (simplified for UI)
+              const updated = [...prev];
+              const currentPoint = updated[existingDayIdx];
+              // This is a simple running average for the UI update
+              updated[existingDayIdx] = {
+                ...currentPoint,
+                score: Number(((currentPoint.score + logData.sentimentScore) / 2).toFixed(2))
+              };
+              return updated;
+            } else {
+              // If it's a new day, add it and maintain last 7 days
+              const newPoint = {
+                day: todayName,
+                fullDate: todayKey,
+                score: logData.sentimentScore ?? 0
+              };
+              const updated = [...prev, newPoint];
+              return updated.slice(-7);
+            }
+        });
+        setLatestMoodScore(logData.sentimentScore ?? 0);
+
+        setMood(''); 
+      } catch (err) {
+        console.error("Mood Submission Error:", err);
+        alert(err.response?.data?.message || "Check-in failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
 };
 
   const handleLogout = () => {
@@ -169,7 +209,9 @@ const Dashboard = () => {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
           {/* Column 1: Mood Check-in */}
+
           <section className={`p-8 rounded-[2.5rem] border transition-all min-h-[400px] flex flex-col justify-center ${isDark ? 'bg-slate-900/40 border-slate-800 backdrop-blur-xl' : 'bg-white border-slate-100 shadow-sm'}`}>
             {!lastResponse ? (
               <>
@@ -203,13 +245,30 @@ const Dashboard = () => {
           {/* Column 2: Graph */}
           <section className={`p-8 rounded-[2.5rem] border transition-all h-full min-h-[400px] ${isDark ? 'bg-slate-900/40 border-slate-800 backdrop-blur-xl' : 'bg-white border-slate-100 shadow-sm'}`}>
             <h3 className={`text-xl font-bold mb-6 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Mood Analytics</h3>
-            <div className="h-72">
+            <div className="h-72 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={graphData.length > 0 ? graphData : [{day: 'No Data', score: 0}]}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#1e293b" : "#f1f5f9"} />
                   <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{fill: isDark ? '#64748b' : '#94a3b8', fontSize: 12}} />
                   <YAxis hide domain={[-1, 1]} />
-                  <Tooltip contentStyle={{ borderRadius: '16px', backgroundColor: isDark ? '#1e293b' : '#fff', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} />
+                  <Tooltip 
+                    labelFormatter={(label, payload) => {
+                      const data = payload[0]?.payload;
+                      if (data?.fullDate) {
+                        
+                        return new Date(data.fullDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      }
+                      return label;
+                    }}
+                    formatter={(value) => [`${value}`, "Mood Score"]}
+                    contentStyle={{ 
+                      borderRadius: '16px', 
+                      backgroundColor: isDark ? '#1e293b' : '#fff', 
+                      border: 'none', 
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                      color: isDark ? '#f8fafc' : '#1e293b'
+                    }} 
+                  />
                   <Line type="monotone" dataKey="score" stroke={isDark ? "#818cf8" : "#4f46e5"} strokeWidth={5} dot={{ r: 6, fill: isDark ? '#818cf8' : '#4f46e5', strokeWidth: 3, stroke: isDark ? '#0f172a' : '#fff' }} activeDot={{ r: 10, strokeWidth: 0 }} />
                 </LineChart>
               </ResponsiveContainer>
