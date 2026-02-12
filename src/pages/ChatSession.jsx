@@ -220,25 +220,44 @@ const ChatSession = () => {
 
                 {/* 4. Footer Input */}
                 <footer className={`p-6 transition-all border-t ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-100'}`}>
-                    <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex gap-4">
+                    <form onSubmit={sendMessage} className="max-w-4xl mx-auto flex items-center gap-3">
+                        {/* End Session Button moved here */}
+                        <button 
+                            type="button" 
+                            onClick={endCurrentSession} 
+                            title="End Session"
+                            className={`p-4 rounded-2xl transition-all border-2 flex-shrink-0 ${
+                                isDark 
+                                ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/50' 
+                                : 'bg-white border-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 hover:border-red-100'
+                            }`}
+                        >
+                            <X size={20} />
+                        </button>
+
                         <input 
                             type="text" value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            className={`flex-1 p-4.5 rounded-[1.5rem] outline-none transition-all border-2 text-sm md:text-base ${
+                            className={`flex-1 p-4 rounded-2xl outline-none transition-all border-2 text-sm md:text-base ${
                                 isDark 
                                 ? 'bg-slate-800 border-slate-700 text-white focus:border-indigo-500' 
                                 : 'bg-slate-50 border-slate-100 text-slate-900 focus:border-indigo-500 focus:bg-white'
                             }`}
                             placeholder="Share what's on your mind..."
                         />
-                        <button type="submit" disabled={loading} className={`p-4.5 rounded-[1.5rem] transition-all flex items-center justify-center ${loading ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20 active:scale-95'}`}>
-                            <Send size={24} />
+
+                        <button 
+                            type="submit" 
+                            disabled={loading} 
+                            className={`p-4 rounded-2xl transition-all flex items-center justify-center flex-shrink-0 ${
+                                loading ? 'opacity-50' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-900/20 active:scale-95'
+                            }`}
+                        >
+                            <Send size={20} />
                         </button>
                     </form>
-          </footer>
-          <button onClick={endCurrentSession} className={`absolute bottom-6 right-6 p-3 rounded-full transition-all ${isDark ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-white text-gray-500 hover:bg-gray-100'}`}>
-            <X size={22} />
-          </button>
+                </footer>
+           
             </div>
         </div>
     );

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../axios.config.js';
 import { useNavigate } from 'react-router-dom';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import { Heart, Mail, Lock, User, ArrowRight, Sun, Moon } from 'lucide-react';
+import { Heart, Mail, Lock, User, ArrowRight,ArrowLeft, Sun, Moon } from 'lucide-react';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -78,6 +78,20 @@ const Auth = () => {
           style={{ x: cursorX, y: cursorY, left: '-200px', top: '-200px' }}
           className={`absolute w-[400px] h-[400px] rounded-full blur-[100px] transition-colors duration-700 ${isDark ? 'bg-indigo-500/10' : 'bg-indigo-400/10'}`}
         />
+      </div>
+
+      <div className="fixed top-8 left-8 z-50">
+        <button 
+          onClick={() => navigate('/')}
+          className={`flex items-center gap-2 px-4 py-3 rounded-2xl transition-all border hover:scale-105 active:scale-95 shadow-sm font-bold text-sm ${
+            isDark 
+              ? 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700' 
+              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          <ArrowLeft size={18} />
+          Back
+        </button>
       </div>
 
       {/* ✅ Side Theme Toggle */}
